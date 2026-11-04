@@ -1,0 +1,30 @@
+name: Send Daily Qarzdorlik Report
+
+on:
+  schedule:
+    # Har kuni soat 11:00 UTC (Toshkent vaqti bilan 16:00)
+    - cron: '0 11 * * *'
+  workflow_dispatch: # Test qilish uchun qo'lda ishga tushirish tugmasi
+
+jobs:
+  send-report:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Kodni yuklab olish
+        uses: actions/checkout@v4
+
+      - name: Python o'rnatish
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Kutubxonalarni o'rnatish
+        run: |
+          pip install telethon pandas openpyxl requests
+
+      - name: Hisobotni yuklash va yuborish
+        env:
+          SESSION_STRING: ${{ secrets.SESSION_STRING }}
+        run: |
+          python send_report.py
