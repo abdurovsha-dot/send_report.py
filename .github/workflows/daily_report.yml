@@ -3,7 +3,7 @@ name: Send Daily Qarzdorlik Report
 on:
   schedule:
     # Har kuni soat 11:00 UTC (Toshkent vaqti bilan 16:00)
-    - cron: '0 11 * * *'
+    - cron: '0 10 * * *'
   workflow_dispatch: # Test qilish uchun qo'lda ishga tushirish tugmasi
 
 jobs:
