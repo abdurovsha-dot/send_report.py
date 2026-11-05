@@ -10,8 +10,9 @@ from telethon.sessions import StringSession
 # Sizning ma'lumotlaringiz
 API_ID = 33493524
 API_HASH = '764eff1c8982e79934f9d4a411e7630e'
-# Agar GitHub Secrets'dan olmoqchi bo'lsangiz quyidagicha qoladi:
-SESSION_STRING = os.environ.get('SESSION_STRING', '').strip() 
+# Probel va enterlarni avtomatik olib tashlaydi
+raw_session = os.environ.get('SESSION_STRING', '')
+SESSION_STRING = "".join(raw_session.split())
 
 # Qabul qiluvchi shaxs
 TARGET_USER = '@a1matov571'
