@@ -1,18 +1,12 @@
 import os
-import asyncio
 import requests
 import pandas as pd
 from io import StringIO
 from datetime import datetime
-from telethon import TelegramClient
-from telethon.sessions import StringSession
 
-# GitHub Secrets'dan ma'lumotlarni olish
-API_ID = int(os.environ.get('API_ID', 0))
-API_HASH = os.environ.get('API_HASH', '').strip()
-raw_session = os.environ.get('SESSION_STRING', '')
-SESSION_STRING = "".join(raw_session.split())
-TARGET_USER = os.environ.get('TARGET_USER', '').strip()
+# Sizning Bot Token va Guruh ID parametrlaringiz
+BOT_TOKEN = "1601071734:AAFG7H_l2vTbsi4SZ8TsnCI8Y_mKSibWdOc"
+CHAT_ID = -1003719999075
 
 # Google Jadval parametrlari
 SPREADSHEET_ID = '1WgrobwCXOTSAcj0dcU8I4SziRIHHIu84FjBxe76RGkU'
@@ -33,23 +27,8 @@ def download_and_convert_to_excel():
         df.to_excel(writer, sheet_name='qarzdorlik', index=False)
     print(f"Jadval muvaffaqiyatli saqlandi: {EXCEL_FILE}")
 
-async def main():
-    if not API_ID or not API_HASH or not SESSION_STRING:
-        print("XATOLIK: API_ID, API_HASH yoki SESSION_STRING topilmadi!")
-        return
-
-    if not TARGET_USER:
-        print("XATOLIK: TARGET_USER topilmadi!")
-        return
-
-    # 1. Google Jadvaldan Excel fayl yasash
-    try:
-        download_and_convert_to_excel()
-    except Exception as e:
-        print(f"Google Jadvalni yuklashda xatolik: {e}")
-        return
-
-    # 2. Telegram orqali yuborish
+def send_file_to_telegram():
+    url = f"https://api.telegram.org/bot{BOT_TOKEN}/sendDocument"
     today_str = datetime.now().strftime('%d.%m.%Y')
     caption_text = (
         f"📊 <b>Qarzdorlik bo'yicha hisobot</b>\n"
@@ -57,24 +36,33 @@ async def main():
         f"<i>Ushbu fayl avtomatik tarzda Google Jadvaldan olindi.</i>"
     )
 
-    target = int(TARGET_USER) if TARGET_USER.lstrip('-').isdigit() else TARGET_USER
+    print(f"Fayl guruhga ({CHAT_ID}) yuborilmoqda...")
+    with open(EXCEL_FILE, 'rb') as doc:
+        response = requests.post(
+            url,
+            data={
+                'chat_id': CHAT_ID,
+                'caption': caption_text,
+                'parse_mode': 'HTML'
+            },
+            files={'document': doc},
+            timeout=60
+        )
 
+    if response.status_code == 200:
+        print("Fayl guruhga muvaffaqiyatli yuborildi!")
+    else:
+        print(f"Yuborishda xatolik: {response.status_code} - {response.text}")
+
+def main():
     try:
-        async with TelegramClient(StringSession(SESSION_STRING), API_ID, API_HASH) as client:
-            print(f"Fayl shaxsiy profildan yuborilmoqda: {target}")
-            await client.send_file(
-                target,
-                EXCEL_FILE,
-                caption=caption_text,
-                parse_mode='html'
-            )
-            print("Fayl muvaffaqiyatli yuborildi!")
+        download_and_convert_to_excel()
+        send_file_to_telegram()
     except Exception as e:
-        print(f"Yuborishda xatolik yuz berdi: {e}")
-
-    # Vaqtinchalik faylni o'chirish
-    if os.path.exists(EXCEL_FILE):
-        os.remove(EXCEL_FILE)
+        print(f"Kutilmagan xatolik: {e}")
+    finally:
+        if os.path.exists(EXCEL_FILE):
+            os.remove(EXCEL_FILE)
 
 if __name__ == '__main__':
-    asyncio.run(main())
+    main()
