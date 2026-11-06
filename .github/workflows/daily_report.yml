@@ -2,9 +2,9 @@ name: Send Daily Qarzdorlik Report
 
 on:
   schedule:
-    # Har kuni soat 11:00 UTC (Toshkent vaqti bilan 16:00)
-    - cron: '0 10 * * *'
-  workflow_dispatch: # Test qilish uchun qo'lda ishga tushirish tugmasi
+    # Har kuni Toshkent vaqti bilan 16:00 (UTC 11:00)
+    - cron: '0 11 * * *'
+  workflow_dispatch:
 
 jobs:
   send-report:
@@ -21,10 +21,11 @@ jobs:
 
       - name: Kutubxonalarni o'rnatish
         run: |
-          pip install telethon pandas openpyxl requests
+          pip install requests pandas openpyxl
 
-      - name: Hisobotni yuklash va yuborish
+      - name: Hisobotni yuborish
         env:
-          SESSION_STRING: ${{ secrets.SESSION_STRING }}
+          BOT_TOKEN: ${{ secrets.BOT_TOKEN }}
+          CHAT_ID: ${{ secrets.CHAT_ID }}
         run: |
           python send_report.py
