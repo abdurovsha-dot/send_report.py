@@ -72,7 +72,7 @@ async def main():
     except Exception as e:
         print(f"Yuborishda xatolik yuz berdi: {e}")
 
-    # Vaqtinchalik faylni tozalash
+    # Vaqtinchalik faylni o'chirish
     if os.path.exists(EXCEL_FILE):
         os.remove(EXCEL_FILE)
 
