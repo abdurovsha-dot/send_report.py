@@ -1,55 +1,75 @@
 import os
+import asyncio
 import requests
 import pandas as pd
 from io import StringIO
 from datetime import datetime
+from telethon import TelegramClient
+from telethon.sessions import StringSession
 
-BOT_TOKEN = os.environ.get('BOT_TOKEN', '').strip()
-CHAT_ID = os.environ.get('CHAT_ID', '').strip()
+# GitHub Secrets'dan ma'lumotlarni olish
+API_ID = int(os.environ.get('API_ID', 0))
+API_HASH = os.environ.get('API_HASH', '').strip()
+raw_session = os.environ.get('SESSION_STRING', '')
+SESSION_STRING = "".join(raw_session.split())
+TARGET_USER = os.environ.get('TARGET_USER', '').strip()
 
+# Google Jadval parametrlari
 SPREADSHEET_ID = '1WgrobwCXOTSAcj0dcU8I4SziRIHHIu84FjBxe76RGkU'
-GID = '1202843343'
+GID = '1202843343'  # "qarzdorlik" sahifasi
 CSV_URL = f"https://docs.google.com/spreadsheets/d/{SPREADSHEET_ID}/export?format=csv&gid={GID}"
+
 EXCEL_FILE = 'qarzdorlik.xlsx'
 
-def main():
-    if not BOT_TOKEN or not CHAT_ID:
-        print("XATOLIK: BOT_TOKEN yoki CHAT_ID topilmadi!")
-        return
-
-    # 1. Google Jadvaldan yuklab, Excel ga aylantirish
+def download_and_convert_to_excel():
     print("Google Jadvaldan ma'lumotlar yuklab olinmoqda...")
-    res = requests.get(CSV_URL, timeout=30)
-    res.raise_for_status()
+    response = requests.get(CSV_URL, timeout=30)
+    response.raise_for_status()
 
-    data = StringIO(res.text)
+    data = StringIO(response.text)
     df = pd.read_csv(data)
 
     with pd.ExcelWriter(EXCEL_FILE, engine='openpyxl') as writer:
         df.to_excel(writer, sheet_name='qarzdorlik', index=False)
-    print("Excel fayl tayyorlandi.")
+    print(f"Jadval muvaffaqiyatli saqlandi: {EXCEL_FILE}")
 
-    # 2. Telegram Bot orqali yuborish
+async def main():
+    if not API_ID or not API_HASH or not SESSION_STRING:
+        print("XATOLIK: API_ID, API_HASH yoki SESSION_STRING topilmadi!")
+        return
+
+    if not TARGET_USER:
+        print("XATOLIK: TARGET_USER topilmadi!")
+        return
+
+    # 1. Google Jadvaldan Excel fayl yasash
+    try:
+        download_and_convert_to_excel()
+    except Exception as e:
+        print(f"Google Jadvalni yuklashda xatolik: {e}")
+        return
+
+    # 2. Telegram orqali yuborish
     today_str = datetime.now().strftime('%d.%m.%Y')
-    caption_text = f"📊 Qarzdorlik bo'yicha hisobot ({today_str})"
+    caption_text = (
+        f"📊 <b>Qarzdorlik bo'yicha hisobot</b>\n"
+        f"🗓 Sana: <b>{today_str}</b>\n\n"
+        f"<i>Ushbu fayl avtomatik tarzda Google Jadvaldan olindi.</i>"
+    )
 
-    url = f"https://api.telegram.org/bot{BOT_TOKEN}/sendDocument"
-    print(f"Fayl yuborilmoqda: {CHAT_ID}...")
+    # Agar TARGET_USER faqat raqam bo'lsa int formatga o'tkazish
+    target = int(TARGET_USER) if TARGET_USER.lstrip('-').isdigit() else TARGET_USER
 
-    with open(EXCEL_FILE, 'rb') as doc:
-        response = requests.post(
-            url,
-            data={'chat_id': CHAT_ID, 'caption': caption_text},
-            files={'document': doc}
-        )
-
-    if response.status_code == 200:
-        print("Fayl muvaffaqiyatli yuborildi!")
-    else:
-        print(f"Yuborishda xatolik: {response.text}")
-
-    if os.path.exists(EXCEL_FILE):
-        os.remove(EXCEL_FILE)
-
-if __name__ == '__main__':
-    main()
+    async with TelegramClient(StringSession(SESSION_STRING), API_ID, API_HASH) as client:
+        try:
+            print(f"Fayl shaxsiy profildan yuborilmoqda: {target}")
+            await client.send_file(
+                target,
+                EXCEL_FILE,
+                caption=caption_text,
+                parse_mode='html'
+            )
+            print("Fayl muvaffaqiyatli yuborildi!")
+        except Exception as e:
+            print(f"Yuborishda xatolik yuz berdi: {e}")
+        finally:
