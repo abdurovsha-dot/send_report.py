@@ -3,15 +3,15 @@ name: Send Daily Qarzdorlik Report
 on:
   schedule:
     # Har kuni Toshkent vaqti bilan soat 16:00 da (UTC 11:00)
-    - cron: '0 10 * * *'
-  workflow_dispatch:
+    - cron: '0 11 * * *'
+  workflow_dispatch: # Istalgan vaqtda qo'lda ishga tushirib ko'rish imkoniyati
 
 jobs:
   send-report:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Kodni yuklab olish
+      - name: Repozitoriyni yuklab olish
         uses: actions/checkout@v4
 
       - name: Python o'rnatish
@@ -19,10 +19,11 @@ jobs:
         with:
           python-version: '3.11'
 
-      - name: Kutubxonalarni o'rnatish
+      - name: Kerakli kutubxonalarni o'rnatish
         run: |
-          pip install requests pandas openpyxl
+          pip install --upgrade pip
+          pip install -r requirements.txt
 
-      - name: Hisobotni guruhga yuborish
+      - name: Skriptni ishga tushirish
         run: |
           python send_report.py
