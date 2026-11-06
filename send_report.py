@@ -57,11 +57,10 @@ async def main():
         f"<i>Ushbu fayl avtomatik tarzda Google Jadvaldan olindi.</i>"
     )
 
-    # Agar TARGET_USER faqat raqam bo'lsa int formatga o'tkazish
     target = int(TARGET_USER) if TARGET_USER.lstrip('-').isdigit() else TARGET_USER
 
-    async with TelegramClient(StringSession(SESSION_STRING), API_ID, API_HASH) as client:
-        try:
+    try:
+        async with TelegramClient(StringSession(SESSION_STRING), API_ID, API_HASH) as client:
             print(f"Fayl shaxsiy profildan yuborilmoqda: {target}")
             await client.send_file(
                 target,
@@ -70,6 +69,12 @@ async def main():
                 parse_mode='html'
             )
             print("Fayl muvaffaqiyatli yuborildi!")
-        except Exception as e:
-            print(f"Yuborishda xatolik yuz berdi: {e}")
-        finally:
+    except Exception as e:
+        print(f"Yuborishda xatolik yuz berdi: {e}")
+
+    # Vaqtinchalik faylni tozalash
+    if os.path.exists(EXCEL_FILE):
+        os.remove(EXCEL_FILE)
+
+if __name__ == '__main__':
+    asyncio.run(main())
